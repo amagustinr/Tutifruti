@@ -1,0 +1,13 @@
+{
+  "name": "validacion-datos-maestros",
+  "version": "1.0.0",
+  "description": "Modulo interno de validacion de datos maestros",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}

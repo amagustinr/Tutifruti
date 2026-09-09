@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SISFAMECA — Validación de datos maestros</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23555'/></svg>">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: #222;
+    font: 13px/1.45 "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 12px; }
+  .panel { border: 1px solid #d4d4d4; background: #fff; }
+  .barra {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 7px 12px; background: #f3f3f3; border-bottom: 1px solid #d4d4d4;
+    font-size: 12px;
+  }
+  .barra b { font-weight: 600; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 16px; padding: 7px 12px;
+    border-bottom: 1px solid #e4e4e4; font-size: 12px; color: #555;
+  }
+  .meta b { color: #222; }
+  .cuerpo { padding: 12px; }
+  .pie {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    border-top: 1px solid #d4d4d4; background: #f9f9f9; font-size: 12px; color: #666;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 4px 6px; vertical-align: middle; }
+  th { text-align: left; font-weight: 600; font-size: 12px; color: #555; border-bottom: 1px solid #e4e4e4; }
+  .lbl { width: 38%; color: #444; }
+  input[type=text] {
+    width: 100%; padding: 4px 6px; border: 1px solid #bfbfbf; border-radius: 2px;
+    font: inherit; background: #fff;
+  }
+  input[type=text]:focus { outline: 1px solid #7aa7d9; border-color: #7aa7d9; }
+  input[type=text]:disabled { background: #f2f2f2; color: #777; }
+  button {
+    padding: 4px 12px; border: 1px solid #b0b0b0; background: #f5f5f5;
+    border-radius: 2px; font: inherit; cursor: pointer;
+  }
+  button:hover { background: #e9e9e9; }
+  button:disabled { color: #999; cursor: default; background: #f5f5f5; }
+  .oculto { display: none !important; }
+  .err { color: #b00; font-size: 12px; margin-top: 6px; }
+  .aud td { border-bottom: 1px solid #eee; }
+  .aud .grupo td { background: #f7f7f7; font-weight: 600; border-top: 1px solid #e0e0e0; }
+  .chk { font-size: 12px; color: #777; }
+  .anulado { text-decoration: line-through; color: #999; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  #panico {
+    position: fixed; inset: 0; background: #fff; z-index: 99;
+    display: flex; align-items: center; justify-content: center;
+    color: #777; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div id="panico" class="oculto">Cargando registros del catálogo, por favor espere…</div>
+
+<div class="wrap">
+
+  <!-- ACCESO -->
+  <div id="vAcceso" class="panel">
+    <div class="barra"><b>SISFAMECA · Validación de datos maestros</b><span>v2.4.1</span></div>
+    <div class="cuerpo">
+      <p style="margin:0 0 10px;color:#555">Acceso al módulo. Identifíquese para tomar lotes pendientes.</p>
+      <table style="max-width:420px">
+        <tr><td class="lbl">Usuario</td><td><input type="text" id="inNombre" maxlength="24" autocomplete="off"></td></tr>
+        <tr><td class="lbl">Área</td><td><input type="text" id="inArea" maxlength="32" autocomplete="off" placeholder="Opcional"></td></tr>
+      </table>
+      <div style="margin-top:10px"><button id="btnAcceder">Ingresar al módulo</button></div>
+      <div id="errAcceso" class="err oculto"></div>
+    </div>
+  </div>
+
+  <!-- MODULO -->
+  <div id="vModulo" class="panel oculto">
+    <div class="barra">
+      <b>SISFAMECA · Validación de datos maestros</b>
+      <span>Usuario: <b id="txtUsuario">—</b> · Lote <b id="txtLote">—</b></span>
+    </div>
+    <div class="meta">
+      <span>Código de clasificación: <b id="txtLetra">—</b></span>
+      <span>Estado: <b id="txtFase">En espera</b></span>
+      <span>Tiempo de sesión: <b id="txtCrono">00:00</b></span>
+      <span style="margin-left:auto" id="txtConectados">0 usuarios en el módulo</span>
+    </div>
+
+    <div class="cuerpo">
+
+      <!-- espera -->
+      <div id="fEspera">
+        <p style="margin:0 0 10px;color:#555">No hay lotes en proceso. Genere un lote para iniciar la validación.</p>
+        <button id="btnIniciar">Tomar lote pendiente</button>
+      </div>
+
+      <!-- captura -->
+      <div id="fCaptura" class="oculto">
+        <table id="tblCampos"></table>
+      </div>
+
+      <!-- auditoria -->
+      <div id="fAuditoria" class="oculto">
+        <p style="margin:0 0 8px;color:#555">
+          Auditoría cruzada. Marque los registros que no cumplen con el código de clasificación.
+        </p>
+        <table class="aud" id="tblAuditoria"></table>
+        <div style="margin-top:10px"><button id="btnConfirmar">Confirmar auditoría</button></div>
+      </div>
+
+      <!-- cierre -->
+      <div id="fCierre" class="oculto">
+        <table id="tblResultados"></table>
+        <div style="margin-top:10px">
+          <button id="btnSiguiente">Tomar siguiente lote</button>
+          <button id="btnReiniciar" style="margin-left:6px">Reiniciar periodo</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pie">
+      <button id="btnCerrar" disabled>Cerrar lote</button>
+      <span id="txtCompletitud">Completitud del lote: 0 %</span>
+      <span style="margin-left:auto" id="txtSync">Sincronizado</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+  var socket = io();
+  var miId = null, campos = [], fase = 'espera', letra = null;
+  var inicio = null, cronoTimer = null, ultAuditoria = null, votosMios = {};
+
+  function $(id) { return document.getElementById(id); }
+  function ver(el, si) { el.classList.toggle('oculto', !si); }
+
+  // ---- panico ----
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      $('panico').classList.toggle('oculto');
+      if (document.activeElement) document.activeElement.blur();
+    }
+  });
+  $('panico').addEventListener('click', function () { $('panico').classList.add('oculto'); });
+
+  // ---- acceso ----
+  function acceder() {
+    var n = $('inNombre').value.trim();
+    if (!n) { $('errAcceso').textContent = 'Ingrese un nombre de usuario.'; ver($('errAcceso'), true); return; }
+    ver($('errAcceso'), false);
+    socket.emit('acceder', { nombre: n, area: $('inArea').value.trim() });
+  }
+  $('btnAcceder').addEventListener('click', acceder);
+  $('inNombre').addEventListener('keydown', function (e) { if (e.key === 'Enter') acceder(); });
+  $('inArea').addEventListener('keydown', function (e) { if (e.key === 'Enter') acceder(); });
+  $('inNombre').addEventListener('input', function () { ver($('errAcceso'), false); });
+
+  socket.on('errorAcceso', function (m) { $('errAcceso').textContent = m; ver($('errAcceso'), true); });
+
+  socket.on('acceso', function (d) {
+    miId = d.id;
+    $('txtUsuario').textContent = $('inNombre').value.trim();
+    ver($('vAcceso'), false);
+    ver($('vModulo'), true);
+  });
+
+  // ---- formulario ----
+  function pintarCampos() {
+    var t = $('tblCampos');
+    t.innerHTML = '';
+    campos.forEach(function (c) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      td1.className = 'lbl'; td1.textContent = c.label;
+      var td2 = document.createElement('td');
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.id = 'campo_' + c.id; inp.maxLength = 40;
+      inp.autocomplete = 'off'; inp.placeholder = 'Sin registro';
+      inp.addEventListener('input', alEscribir);
+      td2.appendChild(inp);
+      tr.appendChild(td1); tr.appendChild(td2);
+      t.appendChild(tr);
+    });
+  }
+
+  function leerFormulario() {
+    var d = {};
+    campos.forEach(function (c) {
+      var el = $('campo_' + c.id);
+      d[c.id] = el ? el.value.trim() : '';
+    });
+    return d;
+  }
+
+  function limpiarFormulario() {
+    campos.forEach(function (c) {
+      var el = $('campo_' + c.id);
+      if (el) { el.value = ''; el.disabled = false; }
+    });
+    actualizarCompletitud();
+  }
+
+  function actualizarCompletitud() {
+    var d = leerFormulario(), llenos = 0;
+    campos.forEach(function (c) { if (d[c.id]) llenos++; });
+    var pct = campos.length ? Math.round(llenos / campos.length * 100) : 0;
+    $('txtCompletitud').textContent = 'Completitud del lote: ' + pct + ' %';
+  }
+
+  var tmr = null;
+  function alEscribir() {
+    actualizarCompletitud();
+    clearTimeout(tmr);
+    tmr = setTimeout(function () {
+      if (fase === 'captura') {
+        socket.emit('guardarRegistro', leerFormulario());
+        $('txtSync').textContent = 'Sincronizado hace un momento';
+      }
+    }, 400);
+  }
+
+  // ---- acciones ----
+  $('btnIniciar').addEventListener('click', function () { socket.emit('iniciarLote'); });
+  $('btnSiguiente').addEventListener('click', function () { socket.emit('iniciarLote'); });
+  $('btnReiniciar').addEventListener('click', function () { socket.emit('reiniciar'); });
+  $('btnCerrar').addEventListener('click', function () {
+    if (fase !== 'captura') return;
+    socket.emit('cerrarLote', leerFormulario());
+  });
+  $('btnConfirmar').addEventListener('click', function () { socket.emit('confirmarAuditoria'); });
+
+  // ---- crono ----
+  function arrancarCrono(desde) {
+    clearInterval(cronoTimer);
+    inicio = desde;
+    cronoTimer = setInterval(function () {
+      if (!inicio) return;
+      var s = Math.floor((Date.now() - inicio) / 1000);
+      var m = String(Math.floor(s / 60)).padStart(2, '0');
+      $('txtCrono').textContent = m + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
+  }
+
+  // ---- estado ----
+  socket.on('estado', function (e) {
+    var faseAnterior = fase;
+    fase = e.fase; letra = e.letra;
+
+    if (!campos.length && e.campos) { campos = e.campos; pintarCampos(); }
+
+    $('txtLote').textContent = String(e.lote).padStart(4, '0');
+    $('txtLetra').textContent = e.letra || '—';
+    $('txtConectados').textContent = e.usuarios.length + ' usuario' + (e.usuarios.length === 1 ? '' : 's') + ' en el módulo';
+
+    var etiquetas = {
+      espera: 'En espera',
+      captura: 'Captura en curso',
+      auditoria: 'Auditoría cruzada',
+      cierre: 'Lote cerrado'
+    };
+    $('txtFase').textContent = etiquetas[e.fase] || e.fase;
+
+    ver($('fEspera'), e.fase === 'espera');
+    ver($('fCaptura'), e.fase === 'captura');
+    ver($('fAuditoria'), e.fase === 'auditoria');
+    ver($('fCierre'), e.fase === 'cierre');
+    $('btnCerrar').disabled = e.fase !== 'captura';
+
+    if (e.fase === 'captura' && faseAnterior !== 'captura') {
+      votosMios = {};
+      limpiarFormulario();
+      arrancarCrono(e.iniciadoEn || Date.now());
+      var primero = $('campo_' + campos[0].id);
+      if (primero) primero.focus();
+    }
+
+    if (e.fase !== 'captura') {
+      clearInterval(cronoTimer);
+      campos.forEach(function (c) {
+        var el = $('campo_' + c.id);
+        if (el) el.disabled = true;
+      });
+    }
+
+    if (e.fase === 'auditoria' && e.cerradoPor) {
+      $('txtSync').textContent = 'Lote cerrado por ' + e.cerradoPor;
+    }
+  });
+
+  // ---- auditoria ----
+  socket.on('auditoria', function (a) {
+    ultAuditoria = a;
+    var t = $('tblAuditoria');
+    t.innerHTML = '';
+    a.filas.forEach(function (fila) {
+      var trg = document.createElement('tr');
+      trg.className = 'grupo';
+      var tdg = document.createElement('td');
+      tdg.colSpan = 3; tdg.textContent = fila.label;
+      trg.appendChild(tdg); t.appendChild(trg);
+
+      fila.entradas.forEach(function (en) {
+        var tr = document.createElement('tr');
+
+        var tdN = document.createElement('td');
+        tdN.style.width = '30%'; tdN.style.color = '#666';
+        tdN.textContent = en.nombre + (en.usuarioId === miId ? ' (usted)' : '');
+
+        var tdV = document.createElement('td');
+        tdV.textContent = en.valor || '— sin registro —';
+        if (!en.valor) tdV.style.color = '#aaa';
+
+        var tdC = document.createElement('td');
+        tdC.style.width = '22%';
+        if (en.usuarioId !== miId && en.valor) {
+          var lab = document.createElement('label');
+          lab.className = 'chk';
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.addEventListener('change', function () {
+            var k = en.usuarioId + ':' + fila.campoId;
+            votosMios[k] = cb.checked;
+            tdV.classList.toggle('anulado', cb.checked);
+            socket.emit('votar', {
+              usuarioId: en.usuarioId, campoId: fila.campoId, rechaza: cb.checked
+            });
+          });
+          lab.appendChild(cb);
+          lab.appendChild(document.createTextNode(' No conforme'));
+          tdC.appendChild(lab);
+        }
+
+        tr.appendChild(tdN); tr.appendChild(tdV); tr.appendChild(tdC);
+        t.appendChild(tr);
+      });
+    });
+  });
+
+  // ---- resultados ----
+  socket.on('resultados', function (r) {
+    var t = $('tblResultados');
+    t.innerHTML =
+      '<tr><th>Usuario</th><th class="num">Registros válidos</th>' +
+      '<th class="num">Eficiencia del lote</th><th class="num">Acumulado periodo</th></tr>';
+    var max = 0;
+    campos.forEach(function () { max += 100; });
+    r.filas.forEach(function (f) {
+      var validos = 0;
+      Object.keys(f.campos).forEach(function (k) { if (f.campos[k].puntos > 0) validos++; });
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + f.nombre + (f.usuarioId === miId ? ' (usted)' : '') + '</td>' +
+        '<td class="num">' + validos + ' / ' + campos.length + '</td>' +
+        '<td class="num">' + (max ? Math.round(f.total / max * 100) : 0) + ' %</td>' +
+        '<td class="num">' + f.acumulado + '</td>';
+      t.appendChild(tr);
+    });
+  });
+
+  socket.on('disconnect', function () { $('txtSync').textContent = 'Reconectando…'; });
+  socket.on('connect', function () {
+    if (miId) $('txtSync').textContent = 'Sesión reiniciada, vuelva a ingresar';
+  });
+})();
+</script>
+</body>
+</html>

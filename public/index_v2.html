@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogo_Maestro_v4.xlsx - Excel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='2' fill='%23217346'/><text x='8' y='12' font-size='11' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>X</text></svg>">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: #f3f2f1; color: #201f1e; overflow: hidden;
+    font: 12px/1.3 "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  .titulo {
+    background: #217346; color: #fff; padding: 5px 12px; font-size: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .titulo .doc { font-weight: 600; }
+  .titulo .der { margin-left: auto; opacity: .85; font-size: 11px; }
+
+  .cinta {
+    background: #fff; border-bottom: 1px solid #d2d0ce;
+    padding: 0 10px; display: flex; gap: 18px; font-size: 12px;
+  }
+  .cinta span { padding: 6px 4px; color: #444; cursor: default; }
+  .cinta span.act { border-bottom: 2px solid #217346; color: #217346; font-weight: 600; }
+
+  .herr {
+    background: #fff; border-bottom: 1px solid #d2d0ce; padding: 4px 10px;
+    display: flex; align-items: center; gap: 8px; height: 34px;
+  }
+  .herr .grp { display: flex; gap: 2px; align-items: center; }
+  .herr button.tb {
+    border: 1px solid transparent; background: none; padding: 3px 7px;
+    border-radius: 2px; font: inherit; color: #333; cursor: default;
+  }
+  .herr button.tb:hover { border-color: #d2d0ce; background: #f5f5f5; }
+  .herr .sep { width: 1px; height: 18px; background: #e1dfdd; }
+
+  .formula {
+    display: flex; align-items: stretch; background: #fff;
+    border-bottom: 1px solid #d2d0ce; height: 26px;
+  }
+  .celdaRef {
+    width: 90px; border-right: 1px solid #d2d0ce; display: flex;
+    align-items: center; padding: 0 8px; color: #333; font-size: 12px;
+  }
+  .fx { width: 26px; display: flex; align-items: center; justify-content: center;
+        color: #666; font-style: italic; border-right: 1px solid #d2d0ce; }
+  .formula .val { flex: 1; display: flex; align-items: center; padding: 0 8px;
+                  color: #333; overflow: hidden; white-space: nowrap; }
+
+  .hoja { flex: 1; overflow: auto; background: #fff; }
+  table.grid { border-collapse: collapse; table-layout: fixed; }
+  table.grid td, table.grid th {
+    border: 1px solid #d4d4d4; height: 21px; padding: 0 4px;
+    font-weight: 400; font-size: 12px; overflow: hidden; white-space: nowrap;
+  }
+  .hdrCol, .hdrRow {
+    background: #f5f5f5; color: #555; text-align: center; font-size: 11px;
+    border: 1px solid #c6c6c6;
+  }
+  .hdrRow { width: 34px; }
+  .cw2 { width: 230px; } .cw3 { width: 190px; } .cw4 { width: 150px; }
+  .celda input {
+    width: 100%; height: 19px; border: none; outline: none; padding: 0 2px;
+    font: inherit; background: transparent; color: #201f1e;
+  }
+  .celda.sel { outline: 2px solid #217346; outline-offset: -2px; }
+  .titSec { font-weight: 600; color: #1f4e79; }
+  .num { text-align: right; }
+  .gris { color: #888; }
+  .tach { text-decoration: line-through; color: #999; }
+  .acc { color: #0563c1; text-decoration: underline; cursor: pointer; }
+
+  .pestanas {
+    background: #f3f2f1; border-top: 1px solid #d2d0ce; padding: 3px 8px;
+    display: flex; align-items: center; gap: 1px; font-size: 12px;
+  }
+  .pest { padding: 4px 12px; color: #555; border: 1px solid transparent; }
+  .pest.act { background: #fff; color: #217346; font-weight: 600;
+              border: 1px solid #d2d0ce; border-bottom-color: #fff; }
+
+  .estado {
+    background: #f3f2f1; border-top: 1px solid #d2d0ce; padding: 3px 10px;
+    display: flex; align-items: center; gap: 16px; font-size: 11px; color: #555;
+  }
+  .estado .der { margin-left: auto; display: flex; gap: 14px; }
+
+  .oculto { display: none !important; }
+  #panico { position: fixed; inset: 0; z-index: 99; background: #fff; }
+</style>
+</head>
+<body>
+
+<div id="panico" class="oculto"></div>
+
+<div class="app">
+
+  <div class="titulo">
+    <span class="doc">Catalogo_Maestro_v4.xlsx</span>
+    <span style="opacity:.8">— Guardado automáticamente</span>
+    <span class="der" id="txtUsuarioTit">Sin sesión</span>
+  </div>
+
+  <div class="cinta">
+    <span>Archivo</span><span class="act">Inicio</span><span>Insertar</span>
+    <span>Diseño de página</span><span>Fórmulas</span><span>Datos</span>
+    <span>Revisar</span><span>Vista</span>
+  </div>
+
+  <div class="herr">
+    <div class="grp">
+      <button class="tb" style="font-weight:700">N</button>
+      <button class="tb" style="font-style:italic">K</button>
+      <button class="tb" style="text-decoration:underline">S</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp">
+      <button class="tb" id="btnIniciar">Actualizar datos</button>
+      <button class="tb" id="btnCerrar" disabled>Guardar y validar</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp"><button class="tb" id="btnConfirmar">Aplicar filtros</button></div>
+    <div class="sep"></div>
+    <div class="grp"><button class="tb" id="btnReiniciar">Borrar formato</button></div>
+  </div>
+
+  <div class="formula">
+    <div class="celdaRef" id="txtRef">A1</div>
+    <div class="fx">fx</div>
+    <div class="val" id="txtFx"></div>
+  </div>
+
+  <div class="hoja">
+    <table class="grid" id="grid"></table>
+  </div>
+
+  <div class="pestanas">
+    <span class="pest act" id="pHoja">Hoja1</span>
+    <span class="pest" id="pAud">Validación</span>
+    <span class="pest" id="pRes">Resumen</span>
+    <span class="pest gris">+</span>
+  </div>
+
+  <div class="estado">
+    <span id="txtEstado">Listo</span>
+    <span id="txtLetraEst"></span>
+    <div class="der">
+      <span id="txtConectados">0 usuarios</span>
+      <span id="txtCrono">00:00</span>
+      <span id="txtCompletitud">Promedio: 0 %</span>
+      <span>100 %</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+  var socket = io();
+  var miId = null, campos = [], fase = 'espera', letra = null, lote = 141;
+  var inicio = null, cronoTimer = null, logueado = false;
+
+  function $(id) { return document.getElementById(id); }
+
+  function escapar(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // ---------- panico: hoja estatica inocua ----------
+  (function () {
+    var h = '<table class="grid" style="width:100%"><tr><th class="hdrRow"></th>';
+    ['A','B','C','D','E','F'].forEach(function (c) {
+      h += '<th class="hdrCol ' + (c === 'B' ? 'cw3' : 'cw4') + '">' + c + '</th>';
+    });
+    h += '</tr>';
+    var datos = [
+      ['Código','Descripción','Unidad','Stock','Costo','Total'],
+      ['MP-1042','Plancha de acero 3mm','UND','120','48.50','5,820.00'],
+      ['MP-1043','Perfil angular 2x2','UND','85','32.00','2,720.00'],
+      ['MP-1051','Electrodo E6011','KG','240','12.75','3,060.00'],
+      ['MP-1077','Disco de corte 7"','UND','310','6.90','2,139.00'],
+      ['MP-1080','Pintura anticorrosiva','GL','44','78.00','3,432.00'],
+      ['MP-1091','Tubo cuadrado 1"','UND','196','21.40','4,194.40'],
+      ['MP-1102','Soldadura inox 308L','KG','58','96.20','5,579.60'],
+      ['MP-1115','Lija de banda 100','UND','420','3.40','1,428.00']
+    ];
+    for (var i = 0; i < 24; i++) {
+      h += '<tr><td class="hdrRow">' + (i + 1) + '</td>';
+      for (var j = 0; j < 6; j++) {
+        var v = datos[i] ? datos[i][j] : '';
+        var cls = (i === 0 ? 'titSec' : (j >= 3 ? 'num' : ''));
+        h += '<td class="' + cls + '">' + escapar(v) + '</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</table>';
+    $('panico').innerHTML =
+      '<div style="height:100%;display:flex;flex-direction:column">' +
+      '<div class="titulo"><span class="doc">Catalogo_Maestro_v4.xlsx</span>' +
+      '<span style="opacity:.8">— Guardado automáticamente</span></div>' +
+      '<div class="cinta"><span>Archivo</span><span class="act">Inicio</span>' +
+      '<span>Insertar</span><span>Diseño de página</span><span>Fórmulas</span>' +
+      '<span>Datos</span><span>Revisar</span><span>Vista</span></div>' +
+      '<div class="formula"><div class="celdaRef">A1</div><div class="fx">fx</div>' +
+      '<div class="val">Código</div></div>' +
+      '<div style="flex:1;overflow:auto;background:#fff">' + h + '</div>' +
+      '<div class="pestanas"><span class="pest act">Hoja1</span>' +
+      '<span class="pest">Hoja2</span><span class="pest gris">+</span></div>' +
+      '<div class="estado"><span>Listo</span><div class="der"><span>100 %</span></div></div>' +
+      '</div>';
+  })();
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      $('panico').classList.toggle('oculto');
+      if (document.activeElement) document.activeElement.blur();
+    }
+  });
+  $('panico').addEventListener('dblclick', function () { $('panico').classList.add('oculto'); });
+
+  // ---------- helpers de grilla ----------
+  function encabezado(anchos) {
+    var h = '<tr><th class="hdrRow"></th>';
+    anchos.forEach(function (a, i) {
+      h += '<th class="hdrCol ' + a + '">' + String.fromCharCode(65 + i) + '</th>';
+    });
+    return h + '</tr>';
+  }
+
+  function filaVacia(n, cols) {
+    var h = '<tr><td class="hdrRow">' + n + '</td>';
+    for (var i = 0; i < cols; i++) h += '<td></td>';
+    return h + '</tr>';
+  }
+
+  function rellenar(desde, hasta, cols) {
+    var h = '';
+    for (var i = desde; i <= hasta; i++) h += filaVacia(i, cols);
+    return h;
+  }
+
+  function marcarSel(inp) {
+    var prev = document.querySelector('.celda.sel');
+    if (prev) prev.classList.remove('sel');
+    if (inp && inp.parentNode) inp.parentNode.classList.add('sel');
+  }
+
+  // ---------- vista: acceso ----------
+  function vistaAcceso() {
+    $('grid').innerHTML = encabezado(['cw2','cw3','cw4','cw4']) +
+      '<tr><td class="hdrRow">1</td><td class="titSec">Registro de sesión de trabajo</td><td></td><td></td><td></td></tr>' +
+      filaVacia(2, 4) +
+      '<tr><td class="hdrRow">3</td><td>Responsable de la hoja</td>' +
+      '<td class="celda sel"><input type="text" id="inNombre" maxlength="24" autocomplete="off"></td><td></td><td></td></tr>' +
+      '<tr><td class="hdrRow">4</td><td>Área / centro de costo</td>' +
+      '<td class="celda"><input type="text" id="inArea" maxlength="32" autocomplete="off"></td><td></td><td></td></tr>' +
+      filaVacia(5, 4) +
+      '<tr><td class="hdrRow">6</td><td></td>' +
+      '<td><span class="acc" id="btnAcceder">Abrir libro compartido</span></td><td></td><td></td></tr>' +
+      '<tr><td class="hdrRow">7</td><td></td><td id="errAcceso" style="color:#c00"></td><td></td><td></td></tr>' +
+      rellenar(8, 26, 4);
+
+    $('btnAcceder').addEventListener('click', acceder);
+    [['inNombre','B3'],['inArea','B4']].forEach(function (p) {
+      var el = $(p[0]);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') acceder(); });
+      el.addEventListener('focus', function () {
+        $('txtRef').textContent = p[1];
+        $('txtFx').textContent = this.value;
+        marcarSel(this);
+      });
+      el.addEventListener('input', function () {
+        $('txtFx').textContent = this.value;
+        $('errAcceso').textContent = '';
+      });
+    });
+    $('inNombre').focus();
+  }
+
+  function acceder() {
+    var n = $('inNombre').value.trim();
+    if (!n) { $('errAcceso').textContent = '#¡VALOR!  Falta el responsable'; return; }
+    $('errAcceso').textContent = '';
+    socket.emit('acceder', { nombre: n, area: $('inArea').value.trim() });
+  }
+
+  // ---------- vista: espera ----------
+  function vistaEspera() {
+    $('grid').innerHTML = encabezado(['cw2','cw3','cw4','cw4']) +
+      '<tr><td class="hdrRow">1</td><td class="titSec">Catálogo maestro</td>' +
+      '<td class="gris">Sin datos cargados</td><td></td><td></td></tr>' +
+      filaVacia(2, 4) +
+      '<tr><td class="hdrRow">3</td><td></td>' +
+      '<td><span class="acc" id="lnkIniciar">Actualizar datos externos</span></td><td></td><td></td></tr>' +
+      rellenar(4, 26, 4);
+    $('lnkIniciar').addEventListener('click', function () { socket.emit('iniciarLote'); });
+    $('txtEstado').textContent = 'Listo';
+  }
+
+  // ---------- vista: captura ----------
+  function vistaCaptura() {
+    var h = encabezado(['cw2','cw3','cw4','cw4']);
+    h += '<tr><td class="hdrRow">1</td><td class="titSec">Catálogo maestro — lote ' +
+         String(lote).padStart(4, '0') + '</td><td class="titSec">Valor asignado</td>' +
+         '<td class="gris">Clasificación</td><td class="titSec">' + escapar(letra || '') + '</td></tr>';
+    h += filaVacia(2, 4);
+    campos.forEach(function (c, i) {
+      h += '<tr><td class="hdrRow">' + (i + 3) + '</td><td>' + escapar(c.label) +
+           '</td><td class="celda"><input type="text" id="campo_' + c.id +
+           '" maxlength="40" autocomplete="off" data-fila="' + (i + 3) +
+           '"></td><td></td><td></td></tr>';
+    });
+    h += rellenar(campos.length + 3, campos.length + 16, 4);
+    $('grid').innerHTML = h;
+
+    campos.forEach(function (c, i) {
+      var el = $('campo_' + c.id);
+      el.addEventListener('input', alEscribir);
+      el.addEventListener('focus', function () {
+        $('txtRef').textContent = 'B' + this.dataset.fila;
+        $('txtFx').textContent = this.value;
+        marcarSel(this);
+      });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var sig = campos[i + 1] ? $('campo_' + campos[i + 1].id) : $('campo_' + campos[0].id);
+          if (sig) sig.focus();
+        }
+      });
+    });
+    var p = $('campo_' + campos[0].id);
+    if (p) p.focus();
+    $('txtEstado').textContent = 'Modificado';
+  }
+
+  function leerFormulario() {
+    var d = {};
+    campos.forEach(function (c) {
+      var el = $('campo_' + c.id);
+      d[c.id] = el ? el.value.trim() : '';
+    });
+    return d;
+  }
+
+  var tmr = null;
+  function alEscribir() {
+    $('txtFx').textContent = this.value;
+    var d = leerFormulario(), llenos = 0;
+    campos.forEach(function (c) { if (d[c.id]) llenos++; });
+    $('txtCompletitud').textContent = 'Promedio: ' +
+      (campos.length ? Math.round(llenos / campos.length * 100) : 0) + ' %';
+    clearTimeout(tmr);
+    tmr = setTimeout(function () {
+      if (fase === 'captura') {
+        socket.emit('guardarRegistro', leerFormulario());
+        $('txtEstado').textContent = 'Guardado automáticamente';
+      }
+    }, 400);
+  }
+
+  // ---------- vista: auditoria ----------
+  function vistaAuditoria(a) {
+    var usuarios = a.filas[0] ? a.filas[0].entradas : [];
+    var anchos = ['cw2'];
+    usuarios.forEach(function () { anchos.push('cw4'); });
+    var nCols = anchos.length;
+
+    var h = encabezado(anchos);
+    h += '<tr><td class="hdrRow">1</td><td class="titSec">Contraste de valores — clasificación ' +
+         escapar(letra || '') + '</td>';
+    usuarios.forEach(function (u) {
+      h += '<td class="titSec">' + escapar(u.nombre) +
+           (u.usuarioId === miId ? ' (usted)' : '') + '</td>';
+    });
+    h += '</tr>';
+
+    var fila = 2;
+    a.filas.forEach(function (f) {
+      h += '<tr><td class="hdrRow">' + fila + '</td><td>' + escapar(f.label) + '</td>';
+      f.entradas.forEach(function (en) {
+        var sid = 'v' + en.usuarioId.replace(/[^a-zA-Z0-9]/g, '') + '_' + f.campoId;
+        if (!en.valor) {
+          h += '<td class="gris">#N/D</td>';
+        } else if (en.usuarioId === miId) {
+          h += '<td>' + escapar(en.valor) + '</td>';
+        } else {
+          h += '<td><input type="checkbox" class="vt" style="vertical-align:-1px;margin-right:4px" ' +
+               'data-uid="' + escapar(en.usuarioId) + '" data-campo="' + escapar(f.campoId) +
+               '" data-span="' + sid + '"><span id="' + sid + '">' +
+               escapar(en.valor) + '</span></td>';
+        }
+      });
+      h += '</tr>';
+      fila++;
+    });
+
+    h += filaVacia(fila, nCols);
+    h += '<tr><td class="hdrRow">' + (fila + 1) + '</td>' +
+         '<td><span class="acc" id="lnkConfirmar">Aplicar filtros</span></td>';
+    for (var k = 1; k < nCols; k++) h += '<td></td>';
+    h += '</tr>';
+    h += rellenar(fila + 2, fila + 12, nCols);
+    $('grid').innerHTML = h;
+
+    Array.prototype.forEach.call(document.querySelectorAll('.vt'), function (cb) {
+      cb.addEventListener('change', function () {
+        var sp = $(cb.dataset.span);
+        if (sp) sp.classList.toggle('tach', cb.checked);
+        socket.emit('votar', {
+          usuarioId: cb.dataset.uid, campoId: cb.dataset.campo, rechaza: cb.checked
+        });
+      });
+    });
+    $('lnkConfirmar').addEventListener('click', function () { socket.emit('confirmarAuditoria'); });
+    $('txtEstado').textContent = 'Filtro aplicado';
+  }
+
+  // ---------- vista: resultados ----------
+  function vistaResultados(r) {
+    var max = campos.length * 100;
+    var h = encabezado(['cw2','cw4','cw4','cw4']);
+    h += '<tr><td class="hdrRow">1</td><td class="titSec">Resumen de consistencia</td>' +
+         '<td class="titSec num">Válidos</td><td class="titSec num">% Hoja</td>' +
+         '<td class="titSec num">Acumulado</td></tr>';
+    var fila = 2;
+    r.filas.forEach(function (f) {
+      var validos = 0;
+      Object.keys(f.campos).forEach(function (k) { if (f.campos[k].puntos > 0) validos++; });
+      h += '<tr><td class="hdrRow">' + fila + '</td><td>' + escapar(f.nombre) +
+           (f.usuarioId === miId ? ' (usted)' : '') + '</td>' +
+           '<td class="num">' + validos + ' / ' + campos.length + '</td>' +
+           '<td class="num">' + (max ? Math.round(f.total / max * 100) : 0) + ' %</td>' +
+           '<td class="num">' + f.acumulado + '</td></tr>';
+      fila++;
+    });
+    h += filaVacia(fila, 4);
+    h += '<tr><td class="hdrRow">' + (fila + 1) + '</td>' +
+         '<td><span class="acc" id="lnkSiguiente">Actualizar datos</span></td>' +
+         '<td></td><td></td><td></td></tr>';
+    h += rellenar(fila + 2, fila + 14, 4);
+    $('grid').innerHTML = h;
+    $('lnkSiguiente').addEventListener('click', function () { socket.emit('iniciarLote'); });
+    $('txtEstado').textContent = 'Listo';
+  }
+
+  // ---------- pestanas ----------
+  function pestanaActiva(cual) {
+    ['pHoja','pAud','pRes'].forEach(function (p) {
+      $(p).classList.toggle('act', p === cual);
+    });
+  }
+
+  // ---------- cinta ----------
+  $('btnIniciar').addEventListener('click', function () { if (logueado) socket.emit('iniciarLote'); });
+  $('btnCerrar').addEventListener('click', function () {
+    if (fase === 'captura') socket.emit('cerrarLote', leerFormulario());
+  });
+  $('btnConfirmar').addEventListener('click', function () {
+    if (fase === 'auditoria') socket.emit('confirmarAuditoria');
+  });
+  $('btnReiniciar').addEventListener('click', function () { if (logueado) socket.emit('reiniciar'); });
+
+  // ---------- crono ----------
+  function arrancarCrono(desde) {
+    clearInterval(cronoTimer);
+    inicio = desde;
+    cronoTimer = setInterval(function () {
+      var s = Math.floor((Date.now() - inicio) / 1000);
+      $('txtCrono').textContent =
+        String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
+  }
+
+  // ---------- socket ----------
+  socket.on('errorAcceso', function (m) {
+    var e = $('errAcceso'); if (e) e.textContent = '#¡VALOR!  ' + m;
+  });
+
+  socket.on('acceso', function (d) {
+    miId = d.id; logueado = true;
+    $('txtUsuarioTit').textContent = $('inNombre').value.trim();
+    if (fase === 'espera') vistaEspera();
+    else if (fase === 'captura') { pestanaActiva('pHoja'); vistaCaptura(); arrancarCrono(inicio || Date.now()); }
+  });
+
+  socket.on('estado', function (e) {
+    var anterior = fase;
+    fase = e.fase; letra = e.letra; lote = e.lote;
+    if (!campos.length && e.campos) campos = e.campos;
+
+    $('txtConectados').textContent = e.usuarios.length + ' usuario' +
+      (e.usuarios.length === 1 ? '' : 's');
+    $('txtLetraEst').textContent = e.letra ? 'Filtro: ' + e.letra : '';
+    $('btnCerrar').disabled = e.fase !== 'captura';
+
+    if (!logueado) return;
+
+    if (e.fase === 'captura' && anterior !== 'captura') {
+      pestanaActiva('pHoja');
+      vistaCaptura();
+      arrancarCrono(e.iniciadoEn || Date.now());
+      $('txtCompletitud').textContent = 'Promedio: 0 %';
+    } else if (e.fase === 'espera' && anterior !== 'espera') {
+      pestanaActiva('pHoja');
+      vistaEspera();
+    }
+
+    if (e.fase !== 'captura') clearInterval(cronoTimer);
+    if (e.fase === 'auditoria' && e.cerradoPor) {
+      $('txtEstado').textContent = 'Actualizado por ' + e.cerradoPor;
+    }
+  });
+
+  socket.on('auditoria', function (a) {
+    if (!logueado) return;
+    pestanaActiva('pAud');
+    vistaAuditoria(a);
+  });
+
+  socket.on('resultados', function (r) {
+    if (!logueado) return;
+    pestanaActiva('pRes');
+    vistaResultados(r);
+  });
+
+  socket.on('disconnect', function () { $('txtEstado').textContent = 'Sin conexión'; });
+
+  vistaAcceso();
+})();
+</script>
+</body>
+</html>
