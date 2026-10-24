@@ -175,3 +175,20 @@ Volver a la terminal donde corre `npm start` y presionar `Ctrl + C`.
 
 El botón "Borrar formato" de la cinta pone todos los puntajes en cero
 y reinicia el ciclo de letras usadas.
+
+---
+
+## Publicar en internet (Render)
+
+GitHub Pages no sirve para este proyecto porque necesita un servidor Node
+(Socket.io). Se publica en Render, que despliega desde este repositorio:
+
+1. Entrar a https://render.com e iniciar sesión con GitHub.
+2. **New → Blueprint**, elegir este repositorio (`render.yaml` ya trae la
+   configuración: `npm ci`, `npm start`, plan free).
+3. Al terminar el deploy, el juego queda en `https://<nombre>.onrender.com`.
+
+Cada `git push` a `main` vuelve a desplegar automáticamente.
+
+Plan gratuito: el servicio se duerme tras 15 min sin tráfico y tarda ~1 min
+en despertar; al dormirse se pierden puntajes y chat (todo está en memoria).

@@ -5,7 +5,8 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// Tolera cortes breves (pantalla bloqueada, cambio de app) antes de dar el socket por muerto.
+const io = new Server(server, { pingInterval: 25000, pingTimeout: 60000 });
 
 const PORT = process.env.PORT || 3000;
 
@@ -39,6 +40,9 @@ const FASES = {
 
 const MAX_CHAT = 60;
 
+// Tiempo que se conserva a un usuario desconectado antes de retirarlo del libro.
+const GRACIA_MS = Number(process.env.GRACIA_MS) || 120000;
+
 // ---------------------------------------------------------------
 // Estado en memoria
 // ---------------------------------------------------------------
@@ -50,11 +54,17 @@ const estado = {
   letrasUsadas: [],
   iniciadoEn: null,
   cerradoPor: null,
-  usuarios: new Map(),   // socketId -> { id, nombre, area, puntaje, listo }
-  registros: new Map(),
+  // La clave es un token propio de cada navegador (no el socket.id, que cambia en cada reconexion).
+  usuarios: new Map(),   // uid -> { id, socketId, nombre, area, puntaje, listo, conectado, timer }
+  registros: new Map(),  // uid -> { campoId: valor }
   votos: new Map(),
+  ultimosResultados: null,
   chat: []               // { nombre, texto, hora }
 };
+
+const socketAUid = new Map();   // socket.id -> uid
+
+function uidDe(socket) { return socketAUid.get(socket.id) || null; }
 
 function usuariosPublicos() {
   return [...estado.usuarios.values()].map(u => ({
@@ -62,7 +72,8 @@ function usuariosPublicos() {
     nombre: u.nombre,
     area: u.area,
     puntaje: u.puntaje,
-    listo: u.listo
+    listo: u.listo,
+    conectado: u.conectado
   }));
 }
 
@@ -82,8 +93,8 @@ function difundir() {
   io.emit('estado', snapshot());
 }
 
-function nombreDe(socketId) {
-  const u = estado.usuarios.get(socketId);
+function nombreDe(uid) {
+  const u = estado.usuarios.get(uid);
   return u ? u.nombre : 'Usuario retirado';
 }
 
@@ -95,8 +106,8 @@ function limpiarListos() {
 // Chat
 // ---------------------------------------------------------------
 
-function publicarChat(socketId, texto) {
-  const u = estado.usuarios.get(socketId);
+function publicarChat(uid, texto) {
+  const u = estado.usuarios.get(uid);
   if (!u) return;
   const limpio = String(texto || '').trim().slice(0, 200);
   if (!limpio) return;
@@ -123,8 +134,10 @@ function sistemaChat(texto) {
 // ---------------------------------------------------------------
 
 function todosListos() {
-  if (estado.usuarios.size === 0) return false;
-  return [...estado.usuarios.values()].every(u => u.listo);
+  // Un jugador con el celular bloqueado no debe trabar la partida.
+  const conectados = [...estado.usuarios.values()].filter(u => u.conectado);
+  if (conectados.length === 0) return false;
+  return conectados.every(u => u.listo);
 }
 
 function evaluarInicio() {
@@ -147,6 +160,7 @@ function iniciarRonda() {
   estado.cerradoPor = null;
   estado.registros.clear();
   estado.votos.clear();
+  estado.ultimosResultados = null;
   limpiarListos();
 
   sistemaChat('Lote ' + String(estado.lote).padStart(4, '0') +
@@ -154,11 +168,11 @@ function iniciarRonda() {
   difundir();
 }
 
-function cerrarLote(socketId) {
+function cerrarLote(uid) {
   if (estado.fase !== FASES.CAPTURA) return;
 
   estado.fase = FASES.AUDITORIA;
-  estado.cerradoPor = nombreDe(socketId);
+  estado.cerradoPor = nombreDe(uid);
   limpiarListos();
 
   for (const id of estado.usuarios.keys()) {
@@ -183,16 +197,16 @@ function construirAuditoria() {
   return { letra: estado.letra, filas };
 }
 
-function votar(socketId, usuarioId, campoId, rechaza) {
+function votar(uid, usuarioId, campoId, rechaza) {
   if (estado.fase !== FASES.AUDITORIA) return;
-  if (usuarioId === socketId) return;
+  if (usuarioId === uid) return;
 
   const clave = `${usuarioId}:${campoId}`;
   if (!estado.votos.has(clave)) estado.votos.set(clave, new Set());
   const set = estado.votos.get(clave);
 
-  if (rechaza) set.add(socketId);
-  else set.delete(socketId);
+  if (rechaza) set.add(uid);
+  else set.delete(uid);
 }
 
 function esRechazado(usuarioId, campoId) {
@@ -259,7 +273,8 @@ function confirmarAuditoria() {
   estado.fase = FASES.CIERRE;
   estado.lote += 1;
   limpiarListos();
-  io.emit('resultados', { letra: estado.letra, filas: calcularResultados() });
+  estado.ultimosResultados = { letra: estado.letra, filas: calcularResultados() };
+  io.emit('resultados', estado.ultimosResultados);
   difundir();
 }
 
@@ -268,6 +283,7 @@ function volverAEspera() {
   estado.letra = null;
   estado.registros.clear();
   estado.votos.clear();
+  estado.ultimosResultados = null;
   limpiarListos();
   difundir();
 }
@@ -280,8 +296,33 @@ function reiniciarTodo() {
   estado.letra = null;
   estado.registros.clear();
   estado.votos.clear();
+  estado.ultimosResultados = null;
   sistemaChat('Periodo reiniciado. Marcadores en cero.');
   difundir();
+}
+
+function retirarUsuario(uid) {
+  const u = estado.usuarios.get(uid);
+  if (!u || u.conectado) return;
+  clearTimeout(u.timer);
+  estado.usuarios.delete(uid);
+  estado.registros.delete(uid);
+  for (const clave of [...estado.votos.keys()]) {
+    if (clave.startsWith(uid + ':')) estado.votos.delete(clave);
+    else estado.votos.get(clave).delete(uid);
+  }
+  if (estado.usuarios.size === 0) {
+    estado.fase = FASES.ESPERA;
+    estado.letra = null;
+    estado.ultimosResultados = null;
+  }
+  sistemaChat(u.nombre + ' cerro el libro.');
+  difundir();
+  evaluarInicio();
+}
+
+function limpiarToken(t) {
+  return String(t || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
 }
 
 // ---------------------------------------------------------------
@@ -290,28 +331,57 @@ function reiniciarTodo() {
 
 io.on('connection', socket => {
 
-  socket.on('acceder', ({ nombre, area }) => {
+  socket.on('acceder', datos => {
+    const { nombre, area, token } = (datos && typeof datos === 'object') ? datos : {};
     const limpio = String(nombre || '').trim().slice(0, 24);
     if (!limpio) {
       socket.emit('errorAcceso', 'Ingrese un nombre de usuario.');
       return;
     }
-    estado.usuarios.set(socket.id, {
-      id: socket.id,
-      nombre: limpio,
-      area: String(area || '').trim().slice(0, 32) || 'Sin area',
-      puntaje: 0,
-      listo: false
-    });
-    socket.emit('acceso', { id: socket.id });
+    const uid = limpiarToken(token) || socket.id;
+    const areaLimpia = String(area || '').trim().slice(0, 32) || 'Sin area';
+
+    let u = estado.usuarios.get(uid);
+    const reconexion = !!u;
+
+    if (u) {
+      // Mismo navegador que vuelve (celular que se desperto, recarga, etc.): conserva todo.
+      clearTimeout(u.timer);
+      u.timer = null;
+      if (u.socketId && u.socketId !== socket.id) socketAUid.delete(u.socketId);
+      u.socketId = socket.id;
+      u.conectado = true;
+      u.nombre = limpio;
+      u.area = areaLimpia;
+    } else {
+      u = {
+        id: uid, socketId: socket.id, nombre: limpio, area: areaLimpia,
+        puntaje: 0, listo: false, conectado: true, timer: null
+      };
+      estado.usuarios.set(uid, u);
+    }
+    socketAUid.set(socket.id, uid);
+
+    socket.emit('acceso', { id: uid });
     socket.emit('chatHistorial', estado.chat);
-    sistemaChat(limpio + ' abrio el libro.');
+    if (!reconexion) sistemaChat(limpio + ' abrio el libro.');
     difundir();
+
+    // Se reenvia lo que el cliente se perdio mientras estaba desconectado.
+    // Va despues de difundir() para que el cliente ya conozca la fase y los campos.
+    if (estado.fase === FASES.CAPTURA && estado.registros.has(uid)) {
+      socket.emit('miRegistro', estado.registros.get(uid));
+    }
     if (estado.fase === FASES.AUDITORIA) socket.emit('auditoria', construirAuditoria());
+    if (estado.fase === FASES.CIERRE && estado.ultimosResultados) {
+      socket.emit('resultados', estado.ultimosResultados);
+    }
+    if (reconexion) evaluarInicio();
   });
 
   socket.on('alternarListo', () => {
-    const u = estado.usuarios.get(socket.id);
+    const uid = uidDe(socket);
+    const u = uid && estado.usuarios.get(uid);
     if (!u) return;
     if (estado.fase === FASES.CAPTURA) return;
 
@@ -325,60 +395,61 @@ io.on('connection', socket => {
     evaluarInicio();
   });
 
-  socket.on('guardarRegistro', datos => {
-    if (estado.fase !== FASES.CAPTURA) return;
-    if (!estado.usuarios.has(socket.id)) return;
+  function registroLimpio(datos) {
     const limpio = {};
     for (const campo of CAMPOS) {
       limpio[campo.id] = String((datos || {})[campo.id] || '').trim().slice(0, 40);
     }
-    estado.registros.set(socket.id, limpio);
+    return limpio;
+  }
+
+  socket.on('guardarRegistro', datos => {
+    const uid = uidDe(socket);
+    if (estado.fase !== FASES.CAPTURA || !uid) return;
+    estado.registros.set(uid, registroLimpio(datos));
   });
 
   socket.on('cerrarLote', datos => {
-    if (!estado.usuarios.has(socket.id)) return;
-    if (estado.fase !== FASES.CAPTURA) return;
-    const limpio = {};
-    for (const campo of CAMPOS) {
-      limpio[campo.id] = String((datos || {})[campo.id] || '').trim().slice(0, 40);
-    }
-    estado.registros.set(socket.id, limpio);
-    cerrarLote(socket.id);
+    const uid = uidDe(socket);
+    if (!uid || estado.fase !== FASES.CAPTURA) return;
+    estado.registros.set(uid, registroLimpio(datos));
+    cerrarLote(uid);
   });
 
-  socket.on('votar', ({ usuarioId, campoId, rechaza }) => {
-    if (!estado.usuarios.has(socket.id)) return;
-    votar(socket.id, usuarioId, campoId, !!rechaza);
+  socket.on('votar', datos => {
+    const { usuarioId, campoId, rechaza } = (datos && typeof datos === 'object') ? datos : {};
+    const uid = uidDe(socket);
+    if (!uid) return;
+    votar(uid, usuarioId, campoId, !!rechaza);
   });
 
   socket.on('confirmarAuditoria', () => {
-    if (!estado.usuarios.has(socket.id)) return;
+    if (!uidDe(socket)) return;
     confirmarAuditoria();
   });
 
   socket.on('mensaje', texto => {
-    publicarChat(socket.id, texto);
+    const uid = uidDe(socket);
+    if (uid) publicarChat(uid, texto);
   });
 
   socket.on('reiniciar', () => {
-    if (!estado.usuarios.has(socket.id)) return;
+    if (!uidDe(socket)) return;
     reiniciarTodo();
   });
 
   socket.on('disconnect', () => {
-    const nombre = nombreDe(socket.id);
-    const existia = estado.usuarios.has(socket.id);
-    estado.usuarios.delete(socket.id);
-    estado.registros.delete(socket.id);
-    for (const clave of [...estado.votos.keys()]) {
-      if (clave.startsWith(socket.id + ':')) estado.votos.delete(clave);
-      else estado.votos.get(clave).delete(socket.id);
-    }
-    if (estado.usuarios.size === 0) {
-      estado.fase = FASES.ESPERA;
-      estado.letra = null;
-    }
-    if (existia) sistemaChat(nombre + ' cerro el libro.');
+    const uid = socketAUid.get(socket.id);
+    socketAUid.delete(socket.id);
+    if (!uid) return;
+    const u = estado.usuarios.get(uid);
+    // Si el usuario ya se reasocio a otro socket, este corte no cuenta.
+    if (!u || u.socketId !== socket.id) return;
+
+    u.conectado = false;
+    u.socketId = null;
+    // No se borra: se le da un margen para volver (el celular suele cortar el socket al bloquearse).
+    u.timer = setTimeout(() => retirarUsuario(uid), GRACIA_MS);
     difundir();
     evaluarInicio();
   });
@@ -389,7 +460,7 @@ io.on('connection', socket => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/salud', (req, res) => {
-  res.json({ ok: true, fase: estado.fase, conectados: estado.usuarios.size });
+  res.json({ ok: true, fase: estado.fase, conectados: [...estado.usuarios.values()].filter(u => u.conectado).length });
 });
 
 server.listen(PORT, '0.0.0.0', () => {

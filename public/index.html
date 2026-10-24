@@ -2,64 +2,84 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#217346">
 <title>Catalogo_Maestro_v4.xlsx - Excel</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='2' fill='%23217346'/><text x='8' y='12' font-size='11' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>X</text></svg>">
 <style>
   * { box-sizing: border-box; }
   html, body { height: 100%; }
+  html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
   body {
     margin: 0; background: #f3f2f1; color: #201f1e; overflow: hidden;
     font: 12px/1.3 "Segoe UI", Tahoma, Arial, sans-serif;
   }
-  .app { display: flex; flex-direction: column; height: 100vh; }
+  :root { --hdr: 34px; }
+  .app {
+    display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+  }
+  .app > * { flex: none; }
+  .app > .medio { flex: 1 1 auto; }
 
   .titulo {
-    background: #217346; color: #fff; padding: 5px 12px; font-size: 12px;
-    display: flex; align-items: center; gap: 10px;
+    background: #217346; color: #fff; font-size: 12px;
+    padding: calc(5px + env(safe-area-inset-top, 0px)) 12px 5px;
+    display: flex; align-items: center; gap: 10px; min-width: 0;
   }
-  .titulo .doc { font-weight: 600; }
-  .titulo .der { margin-left: auto; opacity: .85; font-size: 11px; }
+  .titulo .doc { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .titulo .aviso { opacity: .8; white-space: nowrap; }
+  .titulo .der {
+    margin-left: auto; opacity: .85; font-size: 11px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 45%;
+  }
 
   .cinta {
     background: #fff; border-bottom: 1px solid #d2d0ce;
     padding: 0 10px; display: flex; gap: 18px; font-size: 12px;
+    overflow-x: auto; scrollbar-width: none;
   }
-  .cinta span { padding: 6px 4px; color: #444; cursor: default; }
+  .cinta::-webkit-scrollbar, .herr::-webkit-scrollbar, .pestanas::-webkit-scrollbar { display: none; }
+  .cinta span { padding: 6px 4px; color: #444; cursor: default; white-space: nowrap; flex: none; }
   .cinta span.act { border-bottom: 2px solid #217346; color: #217346; font-weight: 600; }
 
   .herr {
     background: #fff; border-bottom: 1px solid #d2d0ce; padding: 4px 10px;
-    display: flex; align-items: center; gap: 8px; height: 34px;
+    display: flex; align-items: center; gap: 8px; min-height: 34px;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
-  .herr .grp { display: flex; gap: 2px; align-items: center; }
+  .herr .grp { display: flex; gap: 2px; align-items: center; flex: none; }
   .herr button.tb {
     border: 1px solid transparent; background: none; padding: 3px 7px;
-    border-radius: 2px; font: inherit; color: #333; cursor: default;
+    border-radius: 2px; font: inherit; color: #333; cursor: default; white-space: nowrap;
   }
   .herr button.tb:hover { border-color: #d2d0ce; background: #f5f5f5; }
   .herr button.tb:disabled { color: #aaa; }
-  .herr .sep { width: 1px; height: 18px; background: #e1dfdd; }
+  .herr .sep { width: 1px; height: 18px; background: #e1dfdd; flex: none; }
 
   .formula {
     display: flex; align-items: stretch; background: #fff;
     border-bottom: 1px solid #d2d0ce; height: 26px;
   }
   .celdaRef {
-    width: 90px; border-right: 1px solid #d2d0ce; display: flex;
+    width: 90px; flex: none; border-right: 1px solid #d2d0ce; display: flex;
     align-items: center; padding: 0 8px; color: #333; font-size: 12px;
   }
-  .fx { width: 26px; display: flex; align-items: center; justify-content: center;
+  .fx { width: 26px; flex: none; display: flex; align-items: center; justify-content: center;
         color: #666; font-style: italic; border-right: 1px solid #d2d0ce; }
-  .formula .val { flex: 1; display: flex; align-items: center; padding: 0 8px;
+  .formula .val { flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 8px;
                   color: #333; overflow: hidden; white-space: nowrap; }
 
-  .medio { flex: 1; display: flex; min-height: 0; }
-  .hoja { flex: 1; overflow: auto; background: #fff; }
+  .medio { flex: 1; display: flex; min-height: 0; position: relative; }
+  .hoja {
+    flex: 1; min-width: 0; overflow: auto; background: #fff;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  }
 
   /* panel de comentarios = chat */
   .panelCom {
-    width: 250px; border-left: 1px solid #d2d0ce; background: #faf9f8;
+    width: 250px; flex: none; border-left: 1px solid #d2d0ce; background: #faf9f8;
     display: flex; flex-direction: column; min-height: 0;
   }
   .panelCom.oculto { display: none; }
@@ -68,11 +88,11 @@
     color: #333; display: flex; align-items: center; gap: 6px;
   }
   .panelCom .cab .x { margin-left: auto; color: #888; cursor: pointer; padding: 0 3px; }
-  .comLista { flex: 1; overflow-y: auto; padding: 6px 8px; }
+  .comLista { flex: 1; overflow-y: auto; padding: 6px 8px; -webkit-overflow-scrolling: touch; }
   .com { margin-bottom: 8px; }
   .com .aut { font-weight: 600; color: #1f4e79; font-size: 11px; }
   .com .hr { color: #999; font-size: 10px; margin-left: 5px; }
-  .com .tx { color: #333; word-wrap: break-word; }
+  .com .tx { color: #333; overflow-wrap: anywhere; }
   .com.sis .tx { color: #888; font-style: italic; font-size: 11px; }
   .comPie { border-top: 1px solid #e1dfdd; padding: 6px 8px; }
   .comPie textarea {
@@ -80,22 +100,34 @@
     border-radius: 2px; font: inherit; padding: 4px; outline: none;
   }
   .comPie textarea:focus { border-color: #217346; }
-  .emojis { display: flex; flex-wrap: wrap; gap: 1px; margin-top: 4px; }
+  .comAcc { display: flex; align-items: flex-start; gap: 6px; margin-top: 4px; }
+  .emojis { display: flex; flex-wrap: wrap; gap: 1px; flex: 1; min-width: 0; }
   .emojis span {
     cursor: pointer; padding: 1px 3px; border-radius: 2px; font-size: 14px;
   }
   .emojis span:hover { background: #e8e8e8; }
+  .btnEnviar {
+    flex: none; border: 1px solid #b8b6b4; background: #f5f5f5; color: #333;
+    border-radius: 2px; font: inherit; padding: 3px 10px; cursor: pointer;
+  }
+  .btnEnviar:hover { background: #e9e9e9; }
 
-  table.grid { border-collapse: collapse; table-layout: fixed; }
+  /* cuadricula: bordes separados para que los encabezados puedan quedar fijos */
+  /* width:1px + layout fijo = la tabla mide exactamente la suma de sus columnas (con width:auto el navegador ignora el layout fijo) */
+  table.grid { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 1px; }
   table.grid td, table.grid th {
-    border: 1px solid #d4d4d4; height: 21px; padding: 0 4px;
-    font-weight: 400; font-size: 12px; overflow: hidden; white-space: nowrap;
+    border: 0; border-right: 1px solid #d4d4d4; border-bottom: 1px solid #d4d4d4;
+    height: 21px; padding: 0 4px; font-weight: 400; font-size: 12px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
-  .hdrCol, .hdrRow {
+  table.grid .hdrCol, table.grid .hdrRow {
     background: #f5f5f5; color: #555; text-align: center; font-size: 11px;
-    border: 1px solid #c6c6c6;
+    border-right-color: #c6c6c6; border-bottom-color: #c6c6c6;
   }
-  .hdrRow { width: 34px; }
+  table.grid th { border-top: 1px solid #c6c6c6; position: sticky; top: 0; z-index: 3; }
+  table.grid .hdrRow { width: var(--hdr); border-left: 1px solid #c6c6c6; padding: 0; }
+  table.grid td.hdrRow { position: sticky; left: 0; z-index: 2; }
+  table.grid th.hdrRow { position: sticky; left: 0; z-index: 4; }
   .cw2 { width: 230px; } .cw3 { width: 190px; } .cw4 { width: 150px; }
   .celda input {
     width: 100%; height: 19px; border: none; outline: none; padding: 0 2px;
@@ -112,19 +144,75 @@
   .pestanas {
     background: #f3f2f1; border-top: 1px solid #d2d0ce; padding: 3px 8px;
     display: flex; align-items: center; gap: 1px; font-size: 12px;
+    overflow-x: auto; scrollbar-width: none;
   }
-  .pest { padding: 4px 12px; color: #555; border: 1px solid transparent; }
+  .pest { padding: 4px 12px; color: #555; border: 1px solid transparent; white-space: nowrap; flex: none; }
   .pest.act { background: #fff; color: #217346; font-weight: 600;
               border: 1px solid #d2d0ce; border-bottom-color: #fff; }
 
   .estado {
-    background: #f3f2f1; border-top: 1px solid #d2d0ce; padding: 3px 10px;
-    display: flex; align-items: center; gap: 16px; font-size: 11px; color: #555;
+    background: #f3f2f1; border-top: 1px solid #d2d0ce; font-size: 11px; color: #555;
+    padding: 3px 10px calc(3px + env(safe-area-inset-bottom, 0px));
+    display: flex; align-items: center; gap: 16px; overflow: hidden;
   }
-  .estado .der { margin-left: auto; display: flex; gap: 14px; }
+  .estado > span { white-space: nowrap; }
+  #txtEstado { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .estado .der { margin-left: auto; display: flex; gap: 14px; flex: none; }
+  .estado .der span { white-space: nowrap; }
 
   .oculto { display: none !important; }
   #panico { position: fixed; inset: 0; z-index: 99; background: #fff; }
+
+  /* ---------- tablet vertical / telefono ---------- */
+  @media (max-width: 720px) {
+    .titulo .aviso { display: none; }
+    .celdaRef { width: 64px; }
+    .herr { padding: 4px 8px; gap: 6px; }
+    .herr button.tb { padding: 7px 10px; }
+    .pest { padding: 8px 14px; }
+    .estado .zoom { display: none; }
+
+    /* el chat deja de empujar la hoja: se abre encima */
+    .panelCom {
+      position: absolute; top: 0; right: 0; bottom: 0; z-index: 20;
+      width: min(88vw, 340px); box-shadow: -6px 0 16px rgba(0,0,0,.2);
+    }
+    .panelCom .cab { padding: 10px 12px; font-size: 13px; }
+    .panelCom .cab .x { font-size: 24px; line-height: 1; padding: 0 8px; }
+    .comPie textarea { font-size: 16px; height: 48px; }
+    .emojis span { padding: 4px 6px; font-size: 18px; }
+    .btnEnviar { padding: 8px 12px; }
+  }
+
+  /* ---------- telefono ---------- */
+  @media (max-width: 600px) {
+    :root { --hdr: 30px; }
+    .cw2 { width: 128px; }
+    .cw3 { width: max(150px, calc(100vw - 158px)); }
+    .cw4 { width: 120px; }
+    table.grid td, table.grid th {
+      height: 34px; padding: 2px 5px; font-size: 13px;
+      white-space: normal; line-height: 1.2; overflow-wrap: anywhere;
+    }
+    table.grid th { height: 22px; font-size: 11px; padding: 0; }
+    table.grid .hdrRow { padding: 0; }
+    /* etiquetas de la columna B siempre visibles al desplazar */
+    table.grid td:nth-child(2) { position: sticky; left: var(--hdr); z-index: 1; background: #fff; }
+    table.grid th:nth-child(2) { left: var(--hdr); z-index: 4; }
+    .celda input { height: 30px; font-size: 16px; padding: 0 3px; }
+    .acc { display: inline-block; padding: 6px 0; }
+    input.vt { width: 20px; height: 20px; margin-right: 6px !important; }
+    #txtCompletitud { display: none; }
+    #txtLetraEst { font-weight: 600; color: #217346; }
+    .estado { gap: 10px; }
+    .estado .der { gap: 10px; }
+  }
+
+  /* ---------- pantalla baja (telefono horizontal) ---------- */
+  @media (max-height: 480px) {
+    .cinta, .formula { display: none; }
+    .titulo { padding-top: calc(3px + env(safe-area-inset-top, 0px)); padding-bottom: 3px; }
+  }
 </style>
 </head>
 <body>
@@ -135,7 +223,7 @@
 
   <div class="titulo">
     <span class="doc">Catalogo_Maestro_v4.xlsx</span>
-    <span style="opacity:.8">&mdash; Guardado autom&aacute;ticamente</span>
+    <span class="aviso">&mdash; Guardado autom&aacute;ticamente</span>
     <span class="der" id="txtUsuarioTit">Sin sesi&oacute;n</span>
   </div>
 
@@ -178,7 +266,10 @@
       <div class="comLista" id="comLista"></div>
       <div class="comPie">
         <textarea id="txtCom" placeholder="Nuevo comentario..." maxlength="200"></textarea>
-        <div class="emojis" id="emojis"></div>
+        <div class="comAcc">
+          <div class="emojis" id="emojis"></div>
+          <button class="btnEnviar" id="btnEnviar" type="button">Enviar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -197,7 +288,7 @@
       <span id="txtConectados">0 usuarios</span>
       <span id="txtCrono">00:00</span>
       <span id="txtCompletitud">Promedio: 0 %</span>
-      <span>100 %</span>
+      <span class="zoom">100 %</span>
     </div>
   </div>
 
@@ -209,6 +300,33 @@
   var socket = io();
   var miId = null, campos = [], fase = 'espera', letra = null, lote = 141;
   var inicio = null, cronoTimer = null, logueado = false, yoListo = false;
+  // Lo que la pantalla muestra realmente. Es distinto de "fase": los avisos del servidor
+  // pueden llegar antes de ingresar el nombre y no por eso la vista ya esta dibujada.
+  var faseVista = null, rondaVista = null;
+
+  // ---------- sesion: sobrevive a reconexiones y recargas de la pestana ----------
+  // El servidor identifica al jugador por este token, no por el id del socket
+  // (que cambia cada vez que el celular se bloquea o cambia de app).
+  function nuevoToken() {
+    var a = '';
+    try {
+      var b = new Uint8Array(16);
+      (window.crypto || window.msCrypto).getRandomValues(b);
+      for (var i = 0; i < b.length; i++) a += ('0' + b[i].toString(16)).slice(-2);
+    } catch (e) {
+      for (var j = 0; j < 32; j++) a += Math.floor(Math.random() * 16).toString(16);
+    }
+    return a;
+  }
+  function leerSesion() {
+    try { return JSON.parse(sessionStorage.getItem('cm_sesion') || 'null'); } catch (e) { return null; }
+  }
+  function guardarSesion() {
+    try { sessionStorage.setItem('cm_sesion', JSON.stringify({ token: token, nombre: sesionActual.nombre, area: sesionActual.area })); } catch (e) {}
+  }
+  var guardada = leerSesion();
+  var token = (guardada && guardada.token) || nuevoToken();
+  var sesionActual = (guardada && guardada.nombre) ? { nombre: guardada.nombre, area: guardada.area || '' } : null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -249,7 +367,7 @@
     $('panico').innerHTML =
       '<div style="height:100%;display:flex;flex-direction:column">' +
       '<div class="titulo"><span class="doc">Catalogo_Maestro_v4.xlsx</span>' +
-      '<span style="opacity:.8">&mdash; Guardado autom&aacute;ticamente</span></div>' +
+      '<span class="aviso">&mdash; Guardado autom&aacute;ticamente</span></div>' +
       '<div class="cinta"><span>Archivo</span><span class="act">Inicio</span>' +
       '<span>Insertar</span><span>Dise&ntilde;o de p&aacute;gina</span><span>F&oacute;rmulas</span>' +
       '<span>Datos</span><span>Revisar</span><span>Vista</span></div>' +
@@ -258,7 +376,7 @@
       '<div style="flex:1;overflow:auto;background:#fff">' + h + '</div>' +
       '<div class="pestanas"><span class="pest act">Hoja1</span>' +
       '<span class="pest">Hoja2</span><span class="pest gris">+</span></div>' +
-      '<div class="estado"><span>Listo</span><div class="der"><span>100 %</span></div></div>' +
+      '<div class="estado"><span>Listo</span><div class="der"><span class="zoom">100 %</span></div></div>' +
       '</div>';
   })();
 
@@ -270,6 +388,21 @@
     }
   });
   $('panico').addEventListener('dblclick', function () { $('panico').classList.add('oculto'); });
+
+  // En pantallas tactiles no hay Esc: tres toques seguidos en la barra verde hacen lo mismo.
+  (function () {
+    var toques = 0, t0 = null;
+    document.querySelector('.app .titulo').addEventListener('click', function () {
+      toques++;
+      clearTimeout(t0);
+      t0 = setTimeout(function () { toques = 0; }, 600);
+      if (toques >= 3) {
+        toques = 0;
+        $('panico').classList.remove('oculto');
+        if (document.activeElement) document.activeElement.blur();
+      }
+    });
+  })();
 
   // ---------- chat ----------
   var EMOJIS = ['\uD83D\uDC4D','\uD83D\uDE02','\uD83D\uDE31','\uD83D\uDE0E','\uD83D\uDE05',
@@ -290,21 +423,28 @@
     });
   })();
 
+  function esMovil() { return window.matchMedia('(max-width: 720px)').matches; }
+
   function togglePanel(mostrar) {
     var p = $('panelCom');
     if (typeof mostrar === 'undefined') mostrar = p.classList.contains('oculto');
     p.classList.toggle('oculto', !mostrar);
-    if (mostrar) $('txtCom').focus();
+    // En el telefono no se enfoca solo: abriria el teclado sobre la hoja.
+    if (mostrar && !esMovil()) $('txtCom').focus();
   }
   $('btnCom').addEventListener('click', function () { togglePanel(); });
   $('cerrarCom').addEventListener('click', function () { togglePanel(false); });
 
+  function enviarMensaje() {
+    var t = $('txtCom'), v = t.value.trim();
+    if (v) socket.emit('mensaje', v);
+    t.value = '';
+  }
+  $('btnEnviar').addEventListener('click', function () { enviarMensaje(); $('txtCom').focus(); });
   $('txtCom').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      var v = this.value.trim();
-      if (v) socket.emit('mensaje', v);
-      this.value = '';
+      enviarMensaje();
     }
   });
 
@@ -385,14 +525,21 @@
         $('errAcceso').textContent = '';
       });
     });
-    $('inNombre').focus();
+    if (sesionActual) {
+      // Recarga o pestana restaurada: se vuelve a entrar solo, sin teclado ni formulario.
+      $('inNombre').value = sesionActual.nombre;
+      $('inArea').value = sesionActual.area || '';
+    } else {
+      $('inNombre').focus();
+    }
   }
 
   function acceder() {
     var n = $('inNombre').value.trim();
     if (!n) { $('errAcceso').textContent = '#\u00a1VALOR!  Falta el responsable'; return; }
     $('errAcceso').textContent = '';
-    socket.emit('acceder', { nombre: n, area: $('inArea').value.trim() });
+    sesionActual = { nombre: n, area: $('inArea').value.trim() };
+    socket.emit('acceder', { nombre: n, area: sesionActual.area, token: token });
   }
 
   // ---------- vista: sala de espera ----------
@@ -406,8 +553,8 @@
     usuarios.forEach(function (u) {
       h += '<tr><td class="hdrRow">' + fila + '</td><td>' + escapar(u.nombre) +
            (u.id === miId ? ' (usted)' : '') + '</td>' +
-           '<td class="' + (u.listo ? 'ok' : 'gris') + '">' +
-           (u.listo ? 'Revisado' : 'Pendiente') + '</td>' +
+           '<td class="' + (u.conectado === false ? 'gris' : (u.listo ? 'ok' : 'gris')) + '">' +
+           (u.conectado === false ? 'Sin conexion' : (u.listo ? 'Revisado' : 'Pendiente')) + '</td>' +
            '<td class="gris">' + escapar(u.area || '') + '</td>' +
            '<td class="num">' + u.puntaje + '</td></tr>';
       fila++;
@@ -432,8 +579,9 @@
     var h = encabezado(['cw2','cw3','cw4','cw4']);
     h += '<tr><td class="hdrRow">1</td><td class="titSec">Catalogo maestro &mdash; lote ' +
          String(lote).padStart(4, '0') + '</td><td class="titSec">Valor asignado</td>' +
-         '<td class="gris">Clasificacion</td><td class="titSec">' + escapar(letra || '') + '</td></tr>';
-    h += filaVacia(2, 4);
+         '<td></td><td></td></tr>';
+    h += '<tr><td class="hdrRow">2</td><td class="gris">Clasificacion</td>' +
+         '<td class="titSec">' + escapar(letra || '') + '</td><td></td><td></td></tr>';
     campos.forEach(function (c, i) {
       h += '<tr><td class="hdrRow">' + (i + 3) + '</td><td>' + escapar(c.label) +
            '</td><td class="celda"><input type="text" id="campo_' + c.id +
@@ -612,13 +760,35 @@
   });
 
   socket.on('acceso', function (d) {
+    var primera = !logueado;
     miId = d.id; logueado = true;
-    $('txtUsuarioTit').textContent = $('inNombre').value.trim();
-    togglePanel(true);
+    if (!sesionActual) {
+      sesionActual = {
+        nombre: $('inNombre') ? $('inNombre').value.trim() : '',
+        area: $('inArea') ? $('inArea').value.trim() : ''
+      };
+    }
+    guardarSesion();
+    $('txtUsuarioTit').textContent = sesionActual.nombre;
+    if (primera) togglePanel(!esMovil());
+    else $('txtEstado').textContent = 'Reconectado';
+    mantenerPantalla();
+  });
+
+  // Lo que ya habia escrito en esta ronda, si la pagina se recargo.
+  socket.on('miRegistro', function (r) {
+    if (!r || fase !== 'captura') return;
+    var llenos = 0;
+    campos.forEach(function (c) {
+      var el = $('campo_' + c.id);
+      if (el && !el.value && r[c.id]) el.value = r[c.id];
+      if (el && el.value) llenos++;
+    });
+    $('txtCompletitud').textContent = 'Promedio: ' +
+      (campos.length ? Math.round(llenos / campos.length * 100) : 0) + ' %';
   });
 
   socket.on('estado', function (e) {
-    var anterior = fase;
     fase = e.fase; letra = e.letra; lote = e.lote;
     if (!campos.length && e.campos) campos = e.campos;
 
@@ -626,20 +796,25 @@
     yoListo = yo ? !!yo.listo : false;
 
     var listos = e.usuarios.filter(function (u) { return u.listo; }).length;
-    $('txtConectados').textContent = e.usuarios.length + ' usuario' +
-      (e.usuarios.length === 1 ? '' : 's') +
+    var enLinea = e.usuarios.filter(function (u) { return u.conectado !== false; }).length;
+    $('txtConectados').textContent = enLinea + ' usuario' +
+      (enLinea === 1 ? '' : 's') +
       (e.fase === 'espera' ? ' \u00b7 ' + listos + ' revisados' : '');
     $('txtLetraEst').textContent = e.letra ? 'Filtro: ' + e.letra : '';
     $('btnCerrar').disabled = e.fase !== 'captura';
 
     if (!logueado) return;
 
-    if (e.fase === 'captura' && anterior !== 'captura') {
+    // Se dibuja la ronda si la pantalla no la muestra, o si muestra una ronda anterior
+    // (por ejemplo, alguien que estuvo desconectado mientras los demas jugaban otra).
+    if (e.fase === 'captura' && (faseVista !== 'captura' || rondaVista !== e.iniciadoEn)) {
+      faseVista = 'captura'; rondaVista = e.iniciadoEn;
       pestanaActiva('pHoja');
       vistaCaptura();
       arrancarCrono(e.iniciadoEn || Date.now());
       $('txtCompletitud').textContent = 'Promedio: 0 %';
     } else if (e.fase === 'espera') {
+      faseVista = 'espera';
       pestanaActiva('pHoja');
       vistaEspera(e.usuarios);
     }
@@ -652,17 +827,43 @@
 
   socket.on('auditoria', function (a) {
     if (!logueado) return;
+    faseVista = 'auditoria';
     pestanaActiva('pAud');
     vistaAuditoria(a);
   });
 
   socket.on('resultados', function (r) {
     if (!logueado) return;
+    faseVista = 'cierre';
     pestanaActiva('pRes');
     vistaResultados(r);
   });
 
-  socket.on('disconnect', function () { $('txtEstado').textContent = 'Sin conexion'; });
+  socket.on('disconnect', function () { $('txtEstado').textContent = 'Reconectando...'; });
+
+  // Cada vez que el socket (re)conecta y ya hay sesion, se vuelve a registrar al jugador.
+  socket.on('connect', function () {
+    if (sesionActual) {
+      socket.emit('acceder', { nombre: sesionActual.nombre, area: sesionActual.area, token: token });
+    }
+  });
+
+  // ---------- celular: no dejar que la pantalla se apague ni que el socket quede dormido ----------
+  var wakeLock = null;
+  function mantenerPantalla() {
+    try {
+      if (!navigator.wakeLock || wakeLock) return;   // solo existe en HTTPS (p. ej. el tunel)
+      navigator.wakeLock.request('screen').then(function (l) {
+        wakeLock = l;
+        l.addEventListener('release', function () { wakeLock = null; });
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) return;
+    if (!socket.connected) socket.connect();
+    if (logueado) mantenerPantalla();
+  });
 
   vistaAcceso();
 })();
